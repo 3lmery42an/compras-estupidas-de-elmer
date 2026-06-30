@@ -8,11 +8,11 @@ La app permite registrar articulos pendientes o conseguidos, anadir precio, tien
 
 Sitio publicado con GitHub Pages:
 
-[Ver demo en vivo](https://3lmery42an.github.io/compras-estupidas-de-elmer/)
+[Ver demo en vivo](https://3lmery42an.github.io/Collection/)
 
 Herramienta para exportar datos de `localStorage`:
 
-[Exportar localStorage](https://3lmery42an.github.io/compras-estupidas-de-elmer/localstorage-export.html)
+[Exportar localStorage](https://3lmery42an.github.io/Collection/localstorage-export.html)
 
 ## Screenshots
 
@@ -56,13 +56,13 @@ Pendiente agregar capturas de pantalla de:
 Clona el repositorio:
 
 ```bash
-git clone https://github.com/3lmery42an/compras-estupidas-de-elmer.git
+git clone https://github.com/3lmery42an/Collection.git
 ```
 
 Entra al proyecto:
 
 ```bash
-cd compras-estupidas-de-elmer
+cd Collection
 ```
 
 Abre `index.html` en el navegador o usa una extension como Live Server.
@@ -85,7 +85,7 @@ Para mover tus datos:
 
 1. Abre la version donde si ves tus comics/items.
 2. Presiona `Exportar`.
-3. Abre el [sitio publico](https://3lmery42an.github.io/compras-estupidas-de-elmer/).
+3. Abre el [sitio publico](https://3lmery42an.github.io/Collection/).
 4. Presiona `Importar` y selecciona el archivo JSON descargado.
 5. Acepta reemplazar el catalogo si quieres que quede igual.
 
