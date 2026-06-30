@@ -1,6 +1,9 @@
 const STORAGE_KEY = "compras-geek-catalogo-v1";
 const GOOGLE_CONFIG_KEY = "compras-geek-google-config-v1";
 const TITLE_STORAGE_KEY = "compras-geek-title-v1";
+const CLOUD_CONFIG_KEY = "compras-geek-cloud-config-v1";
+const CLOUD_TABLE = "catalog_items";
+const SUPABASE_MODULE_URL = "https://esm.sh/@supabase/supabase-js@2";
 const DEFAULT_APP_TITLE = "Compras Estupidas de Elmer.";
 
 const typeLabels = {
@@ -120,6 +123,13 @@ const state = {
     search: "",
     sort: "created-desc",
   },
+  cloud: {
+    client: null,
+    configSignature: "",
+    authListener: null,
+    user: null,
+    loading: false,
+  },
 };
 
 const els = {
@@ -127,6 +137,18 @@ const els = {
   titleEditor: document.querySelector("#titleEditor"),
   saveTitleBtn: document.querySelector("#saveTitleBtn"),
   resetTitleBtn: document.querySelector("#resetTitleBtn"),
+  cloudPanel: document.querySelector(".cloud-panel"),
+  cloudStatus: document.querySelector("#cloudStatus"),
+  supabaseUrl: document.querySelector("#supabaseUrl"),
+  supabaseKey: document.querySelector("#supabaseKey"),
+  cloudEmail: document.querySelector("#cloudEmail"),
+  cloudPassword: document.querySelector("#cloudPassword"),
+  saveCloudConfigBtn: document.querySelector("#saveCloudConfigBtn"),
+  cloudSignupBtn: document.querySelector("#cloudSignupBtn"),
+  cloudLoginBtn: document.querySelector("#cloudLoginBtn"),
+  cloudLogoutBtn: document.querySelector("#cloudLogoutBtn"),
+  cloudPullBtn: document.querySelector("#cloudPullBtn"),
+  cloudPushBtn: document.querySelector("#cloudPushBtn"),
   form: document.querySelector("#itemForm"),
   formTitle: document.querySelector("#formTitle"),
   itemId: document.querySelector("#itemId"),
@@ -146,9 +168,12 @@ const els = {
   imageUrl: document.querySelector("#imageUrl"),
   imageData: document.querySelector("#imageData"),
   imageFile: document.querySelector("#imageFile"),
+  imageDropZone: document.querySelector("#imageDropZone"),
+  imageSourceBadge: document.querySelector("#imageSourceBadge"),
   imagePreview: document.querySelector("#imagePreview"),
   localPhotoPreview: document.querySelector("#localPhotoPreview"),
   localPhotoStatus: document.querySelector("#localPhotoStatus"),
+  pasteImageBtn: document.querySelector("#pasteImageBtn"),
   clearPhotoBtn: document.querySelector("#clearPhotoBtn"),
   externalPhotoSearch: document.querySelector("#externalPhotoSearch"),
   googleApiKey: document.querySelector("#googleApiKey"),
@@ -255,6 +280,52 @@ function applyGoogleConfig() {
   const config = loadGoogleConfig();
   els.googleApiKey.value = config.apiKey || "";
   els.googleSearchEngineId.value = config.searchEngineId || "";
+}
+
+function loadCloudConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCloudConfig() {
+  const config = {
+    url: els.supabaseUrl.value.trim().replace(/\/$/, ""),
+    key: els.supabaseKey.value.trim(),
+  };
+  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(config));
+  return config;
+}
+
+function applyCloudConfig() {
+  const config = loadCloudConfig();
+  els.supabaseUrl.value = config.url || "";
+  els.supabaseKey.value = config.key || "";
+}
+
+function getCloudConfigSignature(config) {
+  return `${config.url || ""}|${config.key || ""}`;
+}
+
+function setCloudStatus(message, mode = "idle") {
+  els.cloudStatus.textContent = message;
+  els.cloudPanel.classList.toggle("sync-online", mode === "online");
+  els.cloudPanel.classList.toggle("sync-error", mode === "error");
+}
+
+function renderCloudControls() {
+  const hasConfig = Boolean(els.supabaseUrl.value.trim() && els.supabaseKey.value.trim());
+  const isOnline = Boolean(state.cloud.user);
+  const disabled = state.cloud.loading;
+
+  els.cloudLoginBtn.disabled = disabled || !hasConfig;
+  els.cloudSignupBtn.disabled = disabled || !hasConfig;
+  els.cloudLogoutBtn.hidden = !isOnline;
+  els.cloudLogoutBtn.disabled = disabled;
+  els.cloudPullBtn.disabled = disabled || !isOnline;
+  els.cloudPushBtn.disabled = disabled || !isOnline;
 }
 
 function formatMoney(value) {
@@ -384,7 +455,7 @@ async function compressImageFile(file) {
 
   const dataUrl = await fileToDataUrl(file);
   const image = await loadImage(dataUrl);
-  const maxSide = 1100;
+  const maxSide = 900;
   const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -395,23 +466,88 @@ async function compressImageFile(file) {
   canvas.height = height;
   context.drawImage(image, 0, 0, width, height);
 
-  return canvas.toDataURL("image/jpeg", 0.84);
+  return canvas.toDataURL("image/jpeg", 0.76);
+}
+
+function updateImagePreview(imageSource, message = "") {
+  const source = sanitizeImageSource(imageSource);
+  els.localPhotoPreview.hidden = !source;
+  els.imagePreview.src = source || "";
+  els.localPhotoStatus.textContent = message;
+  els.imageSourceBadge.textContent = source
+    ? source.startsWith("data:image/")
+      ? "Archivo listo"
+      : "URL lista"
+    : "Sin foto";
 }
 
 function showLocalPreview(imageSource, message = "") {
   const source = sanitizeImageSource(imageSource);
   els.imageData.value = source;
-  els.localPhotoPreview.hidden = !source;
-  els.imagePreview.src = source || "";
-  els.localPhotoStatus.textContent = message;
+  updateImagePreview(source, message);
+}
+
+function showRemotePreview(imageSource, message = "") {
+  const source = sanitizeImageSource(imageSource);
+  updateImagePreview(source, message);
 }
 
 function clearLocalPhoto(message = "") {
   els.imageData.value = "";
   els.imageFile.value = "";
-  els.localPhotoPreview.hidden = true;
-  els.imagePreview.removeAttribute("src");
-  els.localPhotoStatus.textContent = message;
+  updateImagePreview(sanitizeImageSource(els.imageUrl.value), message);
+}
+
+function clearAllPhoto(message = "") {
+  els.imageUrl.value = "";
+  clearLocalPhoto(message);
+}
+
+async function processImageFile(file, message = "Foto local lista.") {
+  if (!file) return;
+
+  els.localPhotoStatus.textContent = "Preparando foto...";
+
+  try {
+    const imageData = await compressImageFile(file);
+    els.imageUrl.value = "";
+    els.externalPhotoResults.querySelectorAll(".external-photo-option").forEach((button) => {
+      button.classList.remove("selected");
+    });
+    showLocalPreview(imageData, message);
+    setExternalPhotoStatus("");
+  } catch {
+    clearLocalPhoto("No se pudo cargar esa foto.");
+  }
+}
+
+async function pasteImageFromClipboard() {
+  if (!navigator.clipboard?.read) {
+    els.localPhotoStatus.textContent = "Pegar imagen no esta disponible en este navegador.";
+    return;
+  }
+
+  try {
+    const clipboardItems = await navigator.clipboard.read();
+    for (const clipboardItem of clipboardItems) {
+      const imageType = clipboardItem.types.find((type) => type.startsWith("image/"));
+      if (!imageType) continue;
+
+      const blob = await clipboardItem.getType(imageType);
+      await processImageFile(blob, "Imagen pegada lista.");
+      return;
+    }
+
+    els.localPhotoStatus.textContent = "No encontre una imagen en el portapapeles.";
+  } catch {
+    els.localPhotoStatus.textContent = "No se pudo leer el portapapeles.";
+  }
+}
+
+function handleImageDrop(event) {
+  event.preventDefault();
+  els.imageDropZone.classList.remove("drag-over");
+  processImageFile(event.dataTransfer.files[0]);
 }
 
 function renderExternalPhotos(photos) {
@@ -442,6 +578,7 @@ function renderExternalPhotos(photos) {
 function selectExternalPhoto(url, selectedButton) {
   els.imageUrl.value = url;
   clearLocalPhoto();
+  showRemotePreview(url, "Foto de Google seleccionada.");
   els.externalPhotoResults.querySelectorAll(".external-photo-option").forEach((button) => {
     button.classList.toggle("selected", button === selectedButton);
   });
@@ -778,6 +915,7 @@ async function handleSubmit(event) {
 
   resetForm();
   render();
+  upsertCloudItem(item);
 }
 
 function editItem(id) {
@@ -797,7 +935,11 @@ function editItem(id) {
   els.acquiredDate.value = item.acquiredDate;
   const existingImage = sanitizeImageSource(item.image);
   els.imageUrl.value = existingImage.startsWith("data:image/") ? "" : existingImage;
-  showLocalPreview(existingImage.startsWith("data:image/") ? existingImage : "", existingImage.startsWith("data:image/") ? "Foto local cargada." : "");
+  if (existingImage.startsWith("data:image/")) {
+    showLocalPreview(existingImage, "Foto local cargada.");
+  } else {
+    showRemotePreview(existingImage, existingImage ? "URL de imagen cargada." : "");
+  }
   els.notes.value = item.notes;
   clearExternalPhotos();
   els.formTitle.textContent = "Editar item";
@@ -818,35 +960,45 @@ function getReadingButtonLabel(currentStatus) {
 }
 
 function toggleStatus(id) {
+  let updatedItem = null;
+
   state.items = state.items.map((item) => {
     if (item.id !== id) return item;
 
     const nextStatus = item.status === "owned" ? "wishlist" : "owned";
-    return {
+    updatedItem = {
       ...item,
       status: nextStatus,
       acquiredDate: nextStatus === "owned" && !item.acquiredDate
         ? new Date().toISOString().slice(0, 10)
         : item.acquiredDate,
     };
+    return updatedItem;
   });
 
-  saveItems();
-  render();
+  if (saveItems()) {
+    render();
+    upsertCloudItem(updatedItem);
+  }
 }
 
 function toggleReadingStatus(id) {
+  let updatedItem = null;
+
   state.items = state.items.map((item) => {
     if (item.id !== id || !isReadableType(item.type)) return item;
 
-    return {
+    updatedItem = {
       ...item,
       readingStatus: getNextReadingStatus(item.readingStatus),
     };
+    return updatedItem;
   });
 
-  saveItems();
-  render();
+  if (saveItems()) {
+    render();
+    upsertCloudItem(updatedItem);
+  }
 }
 
 function deleteItem(id) {
@@ -857,8 +1009,10 @@ function deleteItem(id) {
   if (!ok) return;
 
   state.items = state.items.filter((current) => current.id !== id);
-  saveItems();
-  render();
+  if (saveItems()) {
+    render();
+    deleteCloudItem(id);
+  }
 }
 
 function exportData() {
@@ -892,8 +1046,12 @@ function importData(file) {
       if (!Array.isArray(parsed) && parsed.title) {
         setAppTitle(parsed.title);
       }
-      saveItems();
-      render();
+      if (saveItems()) {
+        render();
+        if (state.cloud.user) {
+          runCloudAction(pushLocalToCloud);
+        }
+      }
     } catch (error) {
       alert("No se pudo importar ese archivo JSON.");
     } finally {
@@ -903,7 +1061,271 @@ function importData(file) {
   reader.readAsText(file);
 }
 
+async function getCloudClient() {
+  const config = saveCloudConfig();
+  const signature = getCloudConfigSignature(config);
+
+  if (!config.url || !config.key) {
+    throw new Error("Configura Supabase URL y anon key.");
+  }
+
+  if (state.cloud.client && state.cloud.configSignature === signature) {
+    return state.cloud.client;
+  }
+
+  const { createClient } = await import(SUPABASE_MODULE_URL);
+  const client = createClient(config.url, config.key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: "collector-purchase-tracker-auth",
+    },
+  });
+
+  if (state.cloud.authListener) {
+    state.cloud.authListener.unsubscribe();
+  }
+
+  const { data } = await client.auth.getSession();
+  state.cloud.client = client;
+  state.cloud.configSignature = signature;
+  state.cloud.user = data.session?.user || null;
+  state.cloud.authListener = client.auth.onAuthStateChange((_event, session) => {
+    state.cloud.user = session?.user || null;
+    renderCloudControls();
+    setCloudStatus(state.cloud.user ? `Conectado: ${state.cloud.user.email}` : "Local solamente", state.cloud.user ? "online" : "idle");
+  }).data.subscription;
+
+  return client;
+}
+
+function toCloudRow(item) {
+  return {
+    user_id: state.cloud.user.id,
+    item_id: item.id,
+    data: item,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function fetchCloudItems() {
+  const client = await getCloudClient();
+  const { data, error } = await client
+    .from(CLOUD_TABLE)
+    .select("item_id,data,updated_at")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || [])
+    .map((row) => normalizeItem(row.data || {}))
+    .filter((item) => item.title);
+}
+
+async function upsertCloudItem(item) {
+  if (!item || !state.cloud.user || !state.cloud.client) return;
+
+  try {
+    const { error } = await state.cloud.client
+      .from(CLOUD_TABLE)
+      .upsert(toCloudRow(item), { onConflict: "user_id,item_id" });
+
+    if (error) throw error;
+    setCloudStatus(`Sincronizado: ${item.title}`, "online");
+  } catch (error) {
+    setCloudStatus(`No se sincronizo: ${error.message}`, "error");
+  }
+}
+
+async function deleteCloudItem(id) {
+  if (!state.cloud.user || !state.cloud.client) return;
+
+  try {
+    const { error } = await state.cloud.client
+      .from(CLOUD_TABLE)
+      .delete()
+      .eq("user_id", state.cloud.user.id)
+      .eq("item_id", id);
+
+    if (error) throw error;
+    setCloudStatus("Item eliminado de la nube.", "online");
+  } catch (error) {
+    setCloudStatus(`No se elimino en nube: ${error.message}`, "error");
+  }
+}
+
+async function pushLocalToCloud() {
+  const client = await getCloudClient();
+
+  if (!state.cloud.user) {
+    throw new Error("Inicia sesion primero.");
+  }
+
+  const rows = state.items.map(toCloudRow);
+  const remoteItems = await fetchCloudItems();
+  const localIds = new Set(state.items.map((item) => item.id));
+  const staleRemoteIds = remoteItems
+    .filter((item) => !localIds.has(item.id))
+    .map((item) => item.id);
+
+  if (staleRemoteIds.length) {
+    const { error: deleteError } = await client
+      .from(CLOUD_TABLE)
+      .delete()
+      .eq("user_id", state.cloud.user.id)
+      .in("item_id", staleRemoteIds);
+
+    if (deleteError) throw deleteError;
+  }
+
+  if (rows.length) {
+    const { error } = await client
+      .from(CLOUD_TABLE)
+      .upsert(rows, { onConflict: "user_id,item_id" });
+
+    if (error) throw error;
+  }
+
+  setCloudStatus(`${state.items.length} items subidos a la nube.`, "online");
+}
+
+async function pullCloudToLocal(shouldAsk = true) {
+  const cloudItems = await fetchCloudItems();
+
+  if (!cloudItems.length) {
+    setCloudStatus("La nube no tiene items todavia.", "online");
+    return;
+  }
+
+  if (shouldAsk && state.items.length) {
+    const ok = confirm("Cargar el catalogo de la nube y reemplazar el catalogo local?");
+    if (!ok) return;
+  }
+
+  state.items = cloudItems;
+  if (saveItems()) {
+    render();
+    setCloudStatus(`${cloudItems.length} items cargados desde la nube.`, "online");
+  }
+}
+
+async function reconcileCloudAfterLogin() {
+  const cloudItems = await fetchCloudItems();
+
+  if (!cloudItems.length) {
+    await pushLocalToCloud();
+    return;
+  }
+
+  const shouldLoad = confirm(`Encontre ${cloudItems.length} items en la nube. Cargarlos en este dispositivo?`);
+  if (shouldLoad) {
+    state.items = cloudItems;
+    saveItems();
+    render();
+    setCloudStatus(`${cloudItems.length} items cargados desde la nube.`, "online");
+    return;
+  }
+
+  setCloudStatus("Conectado. Puedes subir local o cargar nube cuando quieras.", "online");
+}
+
+async function runCloudAction(action) {
+  state.cloud.loading = true;
+  renderCloudControls();
+
+  try {
+    await action();
+  } catch (error) {
+    setCloudStatus(error.message || "No se pudo conectar con Supabase.", "error");
+  } finally {
+    state.cloud.loading = false;
+    renderCloudControls();
+  }
+}
+
+async function handleCloudSignup() {
+  await runCloudAction(async () => {
+    const client = await getCloudClient();
+    const email = els.cloudEmail.value.trim();
+    const password = els.cloudPassword.value;
+    const { data, error } = await client.auth.signUp({ email, password });
+
+    if (error) throw error;
+
+    state.cloud.user = data.user || null;
+    if (data.session) {
+      await reconcileCloudAfterLogin();
+      return;
+    }
+
+    setCloudStatus("Cuenta creada. Revisa tu email si Supabase pide confirmacion.", "online");
+  });
+}
+
+async function handleCloudLogin() {
+  await runCloudAction(async () => {
+    const client = await getCloudClient();
+    const email = els.cloudEmail.value.trim();
+    const password = els.cloudPassword.value;
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+    if (error) throw error;
+
+    state.cloud.user = data.user;
+    await reconcileCloudAfterLogin();
+  });
+}
+
+async function handleCloudLogout() {
+  await runCloudAction(async () => {
+    const client = await getCloudClient();
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+    state.cloud.user = null;
+    setCloudStatus("Local solamente", "idle");
+  });
+}
+
+function saveCloudConfigFromForm() {
+  saveCloudConfig();
+  if (state.cloud.authListener) {
+    state.cloud.authListener.unsubscribe();
+    state.cloud.authListener = null;
+  }
+  state.cloud.client = null;
+  state.cloud.user = null;
+  state.cloud.configSignature = "";
+  setCloudStatus("Conexion guardada.", "idle");
+  renderCloudControls();
+}
+
+async function initializeCloud() {
+  applyCloudConfig();
+  renderCloudControls();
+
+  const config = loadCloudConfig();
+  if (!config.url || !config.key) {
+    setCloudStatus("Local solamente", "idle");
+    return;
+  }
+
+  await runCloudAction(async () => {
+    await getCloudClient();
+    if (state.cloud.user) {
+      setCloudStatus(`Conectado: ${state.cloud.user.email}`, "online");
+    } else {
+      setCloudStatus("Conexion lista. Inicia sesion.", "idle");
+    }
+  });
+}
+
 els.form.addEventListener("submit", handleSubmit);
+els.saveCloudConfigBtn.addEventListener("click", saveCloudConfigFromForm);
+els.cloudSignupBtn.addEventListener("click", handleCloudSignup);
+els.cloudLoginBtn.addEventListener("click", handleCloudLogin);
+els.cloudLogoutBtn.addEventListener("click", handleCloudLogout);
+els.cloudPullBtn.addEventListener("click", () => runCloudAction(() => pullCloudToLocal(true)));
+els.cloudPushBtn.addEventListener("click", () => runCloudAction(pushLocalToCloud));
 els.saveTitleBtn.addEventListener("click", () => setAppTitle(els.titleEditor.value));
 els.resetTitleBtn.addEventListener("click", resetAppTitle);
 els.titleEditor.addEventListener("keydown", (event) => {
@@ -941,30 +1363,22 @@ els.imageUrl.addEventListener("input", () => {
   els.externalPhotoResults.querySelectorAll(".external-photo-option").forEach((button) => {
     button.classList.remove("selected");
   });
-  els.localPhotoStatus.textContent = els.imageUrl.value.trim() ? "URL de imagen lista." : "";
+  showRemotePreview(els.imageUrl.value, els.imageUrl.value.trim() ? "URL de imagen lista." : "");
   setExternalPhotoStatus("");
 });
 els.imageFile.addEventListener("change", async () => {
-  const file = els.imageFile.files[0];
-  if (!file) return;
-
-  els.localPhotoStatus.textContent = "Preparando foto...";
-
-  try {
-    const imageData = await compressImageFile(file);
-    els.imageUrl.value = "";
-    els.externalPhotoResults.querySelectorAll(".external-photo-option").forEach((button) => {
-      button.classList.remove("selected");
-    });
-    showLocalPreview(imageData, "Foto local lista.");
-    setExternalPhotoStatus("");
-  } catch {
-    clearLocalPhoto("No se pudo cargar esa foto.");
-  }
+  processImageFile(els.imageFile.files[0]);
 });
+els.imageDropZone.addEventListener("click", () => els.imageFile.click());
+els.imageDropZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  els.imageDropZone.classList.add("drag-over");
+});
+els.imageDropZone.addEventListener("dragleave", () => els.imageDropZone.classList.remove("drag-over"));
+els.imageDropZone.addEventListener("drop", handleImageDrop);
+els.pasteImageBtn.addEventListener("click", pasteImageFromClipboard);
 els.clearPhotoBtn.addEventListener("click", () => {
-  els.imageUrl.value = "";
-  clearLocalPhoto("Foto quitada.");
+  clearAllPhoto("Foto quitada.");
   els.externalPhotoResults.querySelectorAll(".external-photo-option").forEach((button) => {
     button.classList.remove("selected");
   });
@@ -999,5 +1413,6 @@ els.typeFilters.addEventListener("click", (event) => {
 
 loadAppTitle();
 applyGoogleConfig();
+initializeCloud();
 renderReadingPicker();
 render();

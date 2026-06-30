@@ -41,6 +41,55 @@
       </header>
 
       <main>
+        <section class="panel cloud-panel" aria-labelledby="cloudTitle">
+          <div class="cloud-heading">
+            <div>
+              <h2 id="cloudTitle">Sincronizacion</h2>
+              <p id="cloudStatus" class="result-count">Local solamente</p>
+            </div>
+            <button class="secondary-btn" id="cloudLogoutBtn" type="button" hidden>
+              Cerrar sesion
+            </button>
+          </div>
+
+          <div class="cloud-grid">
+            <label>
+              <span>Supabase URL</span>
+              <input id="supabaseUrl" type="url" placeholder="https://xxxxx.supabase.co" />
+            </label>
+            <label>
+              <span>Supabase anon key</span>
+              <input id="supabaseKey" type="password" autocomplete="off" placeholder="Anon o publishable key" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input id="cloudEmail" type="email" autocomplete="email" placeholder="tu@email.com" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+            </label>
+          </div>
+
+          <div class="cloud-actions">
+            <button class="secondary-btn" id="saveCloudConfigBtn" type="button">
+              Guardar conexion
+            </button>
+            <button class="secondary-btn" id="cloudSignupBtn" type="button">
+              Crear cuenta
+            </button>
+            <button class="primary-btn" id="cloudLoginBtn" type="button">
+              Iniciar sesion
+            </button>
+            <button class="secondary-btn" id="cloudPullBtn" type="button" disabled>
+              Cargar nube
+            </button>
+            <button class="secondary-btn" id="cloudPushBtn" type="button" disabled>
+              Subir local
+            </button>
+          </div>
+        </section>
+
         <section class="stats-grid" aria-label="Resumen">
           <div class="stat-panel">
             <span class="stat-label">Pendientes</span>
@@ -198,52 +247,66 @@
                 </label>
               </div>
 
-              <label>
-                <span>Imagen por link o URL</span>
-                <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." />
-              </label>
+              <div class="image-panel">
+                <div class="image-panel-heading">
+                  <span>Imagen del item</span>
+                  <strong id="imageSourceBadge">Sin foto</strong>
+                </div>
 
-              <div class="local-photo-panel">
-                <label>
-                  <span>Foto desde Descargas o archivos</span>
-                  <input id="imageFile" name="imageFile" type="file" accept="image/*" />
-                </label>
+                <button class="image-drop-zone" id="imageDropZone" type="button">
+                  Elegir foto desde archivos o Descargas
+                </button>
+
                 <div class="local-photo-preview" id="localPhotoPreview" hidden>
                   <img id="imagePreview" alt="Vista previa de la foto seleccionada" />
                 </div>
+
                 <div class="local-photo-actions">
+                  <label class="secondary-btn file-action image-file-action">
+                    Seleccionar archivo
+                    <input id="imageFile" name="imageFile" type="file" accept="image/*" />
+                  </label>
+                  <button class="secondary-btn" id="pasteImageBtn" type="button">
+                    Pegar imagen
+                  </button>
                   <button class="secondary-btn" id="clearPhotoBtn" type="button">
                     Quitar foto
                   </button>
                 </div>
-                <p class="local-photo-status" id="localPhotoStatus" aria-live="polite"></p>
-              </div>
 
-              <div class="external-photo-panel">
                 <label>
-                  <span>Fotos de Google</span>
-                  <input id="externalPhotoSearch" type="search" placeholder="Buscar en Google" />
+                  <span>URL de imagen</span>
+                  <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." />
                 </label>
-                <div class="form-row">
+
+                <p class="local-photo-status" id="localPhotoStatus" aria-live="polite"></p>
+
+                <div class="google-photo-panel">
                   <label>
-                    <span>Google API key</span>
-                    <input id="googleApiKey" type="password" autocomplete="off" placeholder="API key" />
+                    <span>Fotos de Google</span>
+                    <input id="externalPhotoSearch" type="search" placeholder="Buscar en Google" />
                   </label>
-                  <label>
-                    <span>Search engine ID</span>
-                    <input id="googleSearchEngineId" type="text" autocomplete="off" placeholder="CX" />
-                  </label>
+                  <div class="form-row">
+                    <label>
+                      <span>Google API key</span>
+                      <input id="googleApiKey" type="password" autocomplete="off" placeholder="API key" />
+                    </label>
+                    <label>
+                      <span>Search engine ID</span>
+                      <input id="googleSearchEngineId" type="text" autocomplete="off" placeholder="CX" />
+                    </label>
+                  </div>
+                  <div class="external-photo-actions">
+                    <button class="secondary-btn" id="externalPhotoBtn" type="button">
+                      Buscar fotos
+                    </button>
+                    <button class="secondary-btn" id="openGoogleImagesBtn" type="button">
+                      Abrir Google
+                    </button>
+                  </div>
+                  <p class="external-photo-status" id="externalPhotoStatus" aria-live="polite"></p>
+                  <div class="external-photo-results" id="externalPhotoResults"></div>
                 </div>
-                <div class="external-photo-actions">
-                  <button class="secondary-btn" id="externalPhotoBtn" type="button">
-                    Buscar fotos
-                  </button>
-                  <button class="secondary-btn" id="openGoogleImagesBtn" type="button">
-                    Abrir Google
-                  </button>
-                </div>
-                <p class="external-photo-status" id="externalPhotoStatus" aria-live="polite"></p>
-                <div class="external-photo-results" id="externalPhotoResults"></div>
               </div>
 
               <label>

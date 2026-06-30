@@ -35,6 +35,7 @@ Pendiente agregar capturas de pantalla de:
 - Ordenar por fecha, prioridad, precio o titulo.
 - Exportar e importar el catalogo en formato JSON.
 - Guardar datos localmente usando `localStorage`.
+- Sincronizar el catalogo entre dispositivos usando Supabase.
 
 ## Tecnologias
 
@@ -43,6 +44,7 @@ Pendiente agregar capturas de pantalla de:
 - JavaScript
 - LocalStorage
 - GitHub Pages
+- Supabase Auth y Database, opcional para sincronizacion en la nube
 - Google Custom Search API, opcional para busqueda de imagenes
 
 ## Instalacion local
@@ -84,6 +86,20 @@ Para mover tus datos:
 
 Tambien puedes abrir `localstorage-export.html` desde el mismo origen donde estan tus datos para descargar un respaldo JSON.
 
+## Sincronizacion con Supabase
+
+Para ver el mismo catalogo en varios dispositivos:
+
+1. Crea un proyecto en Supabase.
+2. Abre el SQL Editor.
+3. Ejecuta el contenido de `supabase-schema.sql`.
+4. En la app, pega tu Supabase URL y tu anon/publishable key.
+5. Crea una cuenta o inicia sesion.
+6. Usa `Subir local` en el dispositivo donde ya tienes tu catalogo.
+7. En otros dispositivos, inicia sesion y usa `Cargar nube`.
+
+La anon key de Supabase puede usarse en frontend, pero debes mantener activado Row Level Security como aparece en `supabase-schema.sql`.
+
 ## Privacidad
 
 Los datos se guardan en el navegador mediante `localStorage`. No existe una base de datos remota. Esto significa que los datos no se sincronizan automaticamente entre dispositivos o navegadores.
@@ -94,8 +110,7 @@ Si usas una API key de Google Custom Search, configura restricciones de segurida
 
 - Los datos solo existen en el navegador donde se guardaron.
 - Las imagenes locales se convierten a base64 y pueden ocupar mucho espacio.
-- No hay autenticacion de usuario.
-- No hay sincronizacion en la nube.
+- La sincronizacion requiere configurar Supabase.
 - No hay pruebas automatizadas todavia.
 
 ## Roadmap
