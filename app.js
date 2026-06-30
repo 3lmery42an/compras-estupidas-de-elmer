@@ -169,6 +169,8 @@ const els = {
   imageUrl: document.querySelector("#imageUrl"),
   imageData: document.querySelector("#imageData"),
   imageFile: document.querySelector("#imageFile"),
+  galleryFile: document.querySelector("#galleryFile"),
+  galleryPhotoBtn: document.querySelector("#galleryPhotoBtn"),
   imageDropZone: document.querySelector("#imageDropZone"),
   imageSourceBadge: document.querySelector("#imageSourceBadge"),
   imagePreview: document.querySelector("#imagePreview"),
@@ -496,6 +498,7 @@ function showRemotePreview(imageSource, message = "") {
 function clearLocalPhoto(message = "") {
   els.imageData.value = "";
   els.imageFile.value = "";
+  els.galleryFile.value = "";
   updateImagePreview(sanitizeImageSource(els.imageUrl.value), message);
 }
 
@@ -1397,7 +1400,11 @@ els.imageUrl.addEventListener("input", () => {
 els.imageFile.addEventListener("change", async () => {
   processImageFile(els.imageFile.files[0]);
 });
-els.imageDropZone.addEventListener("click", () => els.imageFile.click());
+els.galleryFile.addEventListener("change", async () => {
+  processImageFile(els.galleryFile.files[0], "Foto de galeria lista.");
+});
+els.galleryPhotoBtn.addEventListener("click", () => els.galleryFile.click());
+els.imageDropZone.addEventListener("click", () => els.galleryFile.click());
 els.imageDropZone.addEventListener("dragover", (event) => {
   event.preventDefault();
   els.imageDropZone.classList.add("drag-over");

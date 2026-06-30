@@ -162,6 +162,7 @@
               <input id="format" name="format" type="hidden" value="paperback" />
               <input id="readingStatus" name="readingStatus" type="hidden" value="unread" />
               <input id="imageData" name="imageData" type="hidden" />
+              <input id="galleryFile" name="galleryFile" type="file" accept="image/*" hidden />
 
               <label>
                 <span>Titulo</span>
@@ -254,7 +255,7 @@
                 </div>
 
                 <button class="image-drop-zone" id="imageDropZone" type="button">
-                  Elegir foto desde archivos o Descargas
+                  Toca aqui para elegir desde Galeria / Fotos
                 </button>
 
                 <div class="local-photo-preview" id="localPhotoPreview" hidden>
@@ -262,6 +263,9 @@
                 </div>
 
                 <div class="local-photo-actions">
+                  <button class="primary-btn" id="galleryPhotoBtn" type="button">
+                    Galeria / Fotos
+                  </button>
                   <label class="secondary-btn file-action image-file-action">
                     Seleccionar archivo
                     <input id="imageFile" name="imageFile" type="file" accept="image/*" />
