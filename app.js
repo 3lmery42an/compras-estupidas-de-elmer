@@ -9,6 +9,7 @@ const DEFAULT_APP_TITLE = "Compras Estupidas de Elmer.";
 const typeLabels = {
   comic: "Comic",
   manga: "Manga",
+  book: "Libro",
   figure: "Figura",
 };
 
@@ -46,6 +47,7 @@ const formatLabels = {
 const defaultFormatByType = {
   comic: "paperback",
   manga: "tankobon",
+  book: "paperback",
   figure: "scale112",
 };
 
@@ -79,6 +81,9 @@ const seedItems = [
     acquiredDate: "",
     image: "",
     notes: "Edicion tapa blanda o deluxe si aparece a buen precio.",
+    totalPages: 144,
+    pagesRead: 0,
+    readingMinutes: 0,
     createdAt: Date.now() - 3000,
   },
   {
@@ -95,7 +100,29 @@ const seedItems = [
     acquiredDate: "",
     image: "",
     notes: "Empezar coleccion desde el primer volumen.",
+    totalPages: 216,
+    pagesRead: 32,
+    readingMinutes: 45,
     createdAt: Date.now() - 2000,
+  },
+  {
+    id: createId(),
+    title: "Dune",
+    type: "book",
+    status: "wishlist",
+    readingStatus: "queued",
+    priority: "",
+    format: "paperback",
+    price: 14.99,
+    series: "Frank Herbert",
+    store: "Libreria",
+    acquiredDate: "",
+    image: "",
+    notes: "Agregar una edicion comoda para leer.",
+    totalPages: 688,
+    pagesRead: 0,
+    readingMinutes: 0,
+    createdAt: Date.now() - 1500,
   },
   {
     id: createId(),
@@ -111,6 +138,9 @@ const seedItems = [
     acquiredDate: new Date().toISOString().slice(0, 10),
     image: "",
     notes: "Posable, con manos alternas y base sencilla.",
+    totalPages: 0,
+    pagesRead: 0,
+    readingMinutes: 0,
     createdAt: Date.now() - 1000,
   },
 ];
@@ -162,6 +192,12 @@ const els = {
   readingStatus: document.querySelector("#readingStatus"),
   readingPicker: document.querySelector("#readingPicker"),
   readingGroup: document.querySelector("#readingGroup"),
+  readingProgressGroup: document.querySelector("#readingProgressGroup"),
+  pagesRead: document.querySelector("#pagesRead"),
+  totalPages: document.querySelector("#totalPages"),
+  readingMinutes: document.querySelector("#readingMinutes"),
+  progressPreviewText: document.querySelector("#progressPreviewText"),
+  progressPreviewBar: document.querySelector("#progressPreviewBar"),
   price: document.querySelector("#price"),
   series: document.querySelector("#series"),
   store: document.querySelector("#store"),
@@ -338,6 +374,50 @@ function formatMoney(value) {
   }).format(Number(value || 0));
 }
 
+function cleanWholeNumber(value) {
+  const number = Math.floor(Number(value || 0));
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function getReadingProgress(item) {
+  const totalPages = cleanWholeNumber(item.totalPages);
+  const rawPagesRead = cleanWholeNumber(item.pagesRead);
+  const pagesRead = totalPages ? Math.min(rawPagesRead, totalPages) : rawPagesRead;
+  const readingMinutes = cleanWholeNumber(item.readingMinutes);
+  const percent = totalPages ? Math.min(100, Math.round((pagesRead / totalPages) * 100)) : 0;
+
+  return {
+    totalPages,
+    pagesRead,
+    readingMinutes,
+    percent,
+  };
+}
+
+function formatReadingTime(minutes) {
+  const totalMinutes = cleanWholeNumber(minutes);
+  if (!totalMinutes) return "0 min";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
+  if (hours && remainingMinutes) return `${hours} h ${remainingMinutes} min`;
+  if (hours) return `${hours} h`;
+  return `${remainingMinutes} min`;
+}
+
+function getProgressPagesLabel(progress) {
+  if (progress.totalPages) {
+    return `${progress.pagesRead}/${progress.totalPages} paginas`;
+  }
+
+  if (progress.pagesRead) {
+    return `${progress.pagesRead} paginas leidas`;
+  }
+
+  return "0 paginas";
+}
+
 function escapeSearch(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -358,7 +438,7 @@ function setFormat(value) {
 }
 
 function isReadableType(type) {
-  return ["comic", "manga"].includes(type);
+  return ["comic", "manga", "book"].includes(type);
 }
 
 function normalizeReadingStatus(value, type) {
@@ -369,9 +449,11 @@ function normalizeReadingStatus(value, type) {
 function renderReadingPicker() {
   const canTrackReading = isReadableType(els.type.value);
   els.readingGroup.hidden = !canTrackReading;
+  els.readingProgressGroup.hidden = !canTrackReading;
 
   if (!canTrackReading) {
     els.readingStatus.value = "";
+    renderProgressPreview();
     return;
   }
 
@@ -382,11 +464,27 @@ function renderReadingPicker() {
   els.readingPicker.querySelectorAll("button[data-reading]").forEach((button) => {
     button.classList.toggle("active", button.dataset.reading === els.readingStatus.value);
   });
+
+  renderProgressPreview();
 }
 
 function setReadingStatus(value) {
   els.readingStatus.value = normalizeReadingStatus(value, els.type.value);
   renderReadingPicker();
+}
+
+function renderProgressPreview() {
+  const canTrackReading = isReadableType(els.type.value);
+  const progress = canTrackReading
+    ? getReadingProgress({
+      totalPages: els.totalPages.value,
+      pagesRead: els.pagesRead.value,
+      readingMinutes: els.readingMinutes.value,
+    })
+    : getReadingProgress({});
+
+  els.progressPreviewText.textContent = `${progress.percent}%`;
+  els.progressPreviewBar.style.width = `${progress.percent}%`;
 }
 
 function setExternalPhotoStatus(message) {
@@ -653,7 +751,7 @@ async function searchExternalPhotos() {
 }
 
 function openGoogleImages() {
-  const query = buildExternalPhotoQuery() || "comics manga figures";
+  const query = buildExternalPhotoQuery() || "comics manga books figures";
   const url = new URL("https://www.google.com/search");
   url.searchParams.set("tbm", "isch");
   url.searchParams.set("q", query);
@@ -661,7 +759,9 @@ function openGoogleImages() {
 }
 
 function normalizeItem(item) {
-  const type = ["comic", "manga", "figure"].includes(item.type) ? item.type : "comic";
+  const type = Object.prototype.hasOwnProperty.call(typeLabels, item.type) ? item.type : "comic";
+  const canTrackReading = isReadableType(type);
+  const progress = getReadingProgress(item);
 
   return {
     id: item.id || createId(),
@@ -677,6 +777,9 @@ function normalizeItem(item) {
     acquiredDate: String(item.acquiredDate || "").trim(),
     image: sanitizeImageSource(item.image),
     notes: String(item.notes || "").trim(),
+    totalPages: canTrackReading ? progress.totalPages : 0,
+    pagesRead: canTrackReading ? progress.pagesRead : 0,
+    readingMinutes: canTrackReading ? progress.readingMinutes : 0,
     createdAt: Number(item.createdAt || Date.now()),
   };
 }
@@ -697,6 +800,9 @@ function getVisibleItems() {
         statusLabels[item.status],
         readingLabels[item.readingStatus],
         formatLabels[item.format],
+        item.pagesRead,
+        item.totalPages,
+        item.readingMinutes,
       ]
         .join(" ")
         .toLowerCase();
@@ -746,11 +852,17 @@ function createReadingListItem(item) {
   const listItem = document.createElement("li");
   const title = document.createElement("span");
   const meta = document.createElement("span");
+  const progress = getReadingProgress(item);
+  const progressDetails = progress.totalPages || progress.pagesRead || progress.readingMinutes
+    ? `${progress.percent}% | ${getProgressPagesLabel(progress)} | ${formatReadingTime(progress.readingMinutes)}`
+    : "";
 
   title.className = "reading-list-title";
   title.textContent = item.title;
   meta.className = "reading-list-meta";
-  meta.textContent = [typeLabels[item.type], formatLabels[item.format], item.series].filter(Boolean).join(" | ");
+  meta.textContent = [typeLabels[item.type], formatLabels[item.format], item.series, progressDetails]
+    .filter(Boolean)
+    .join(" | ");
 
   listItem.append(title, meta);
   return listItem;
@@ -779,7 +891,7 @@ function renderReadingLists() {
   const unreadItems = readableItems.filter((item) => item.readingStatus === "unread");
   const queuedItems = readableItems.filter((item) => item.readingStatus === "queued");
 
-  els.readingBoardCount.textContent = `${readableItems.length} ${readableItems.length === 1 ? "comic o manga" : "comics y mangas"}`;
+  els.readingBoardCount.textContent = `${readableItems.length} ${readableItems.length === 1 ? "item de lectura" : "items de lectura"}`;
   renderReadingColumn(els.readList, els.readListCount, readItems, "Nada leido todavia.");
   renderReadingColumn(els.unreadList, els.unreadListCount, unreadItems, "Nada sin leer.");
   renderReadingColumn(els.queuedList, els.queuedListCount, queuedItems, "Nada por leer.");
@@ -812,6 +924,11 @@ function renderCatalog() {
     const title = card.querySelector("h3");
     const meta = card.querySelector(".meta-line");
     const price = card.querySelector(".price-line");
+    const readingProgressCard = card.querySelector(".reading-progress-card");
+    const progressPages = card.querySelector(".progress-pages");
+    const progressPercent = card.querySelector(".progress-percent");
+    const progressBar = card.querySelector(".progress-bar");
+    const progressTime = card.querySelector(".progress-time");
     const note = card.querySelector(".note-line");
     const toggleButton = card.querySelector(".toggle-status");
     const toggleReadingButton = card.querySelector(".toggle-reading");
@@ -845,6 +962,12 @@ function renderCatalog() {
       .filter(Boolean)
       .join(" | ");
     price.textContent = `Valor item: ${formatMoney(item.price)}`;
+    const progress = getReadingProgress(item);
+    readingProgressCard.hidden = !isReadableType(item.type);
+    progressPages.textContent = getProgressPagesLabel(progress);
+    progressPercent.textContent = `${progress.percent}%`;
+    progressBar.style.width = `${progress.percent}%`;
+    progressTime.textContent = `Tiempo: ${formatReadingTime(progress.readingMinutes)}`;
     note.textContent = item.notes || "Sin notas.";
 
     toggleButton.textContent = item.status === "owned" ? "Volver a pendiente" : "Marcar conseguido";
@@ -873,6 +996,10 @@ function resetForm() {
   els.cancelEditBtn.hidden = true;
   els.status.value = "wishlist";
   setReadingStatus("unread");
+  els.pagesRead.value = "";
+  els.totalPages.value = "";
+  els.readingMinutes.value = "";
+  renderProgressPreview();
   els.priority.value = "";
   setFormat(getDefaultFormat(els.type.value));
   applyGoogleConfig();
@@ -901,6 +1028,9 @@ async function handleSubmit(event) {
     acquiredDate: els.acquiredDate.value,
     image,
     notes: els.notes.value,
+    totalPages: els.totalPages.value,
+    pagesRead: els.pagesRead.value,
+    readingMinutes: els.readingMinutes.value,
     createdAt: existing?.createdAt || Date.now(),
   });
 
@@ -934,6 +1064,10 @@ function editItem(id) {
   els.priority.value = item.priority;
   setFormat(item.format);
   els.price.value = item.price || "";
+  els.pagesRead.value = item.pagesRead || "";
+  els.totalPages.value = item.totalPages || "";
+  els.readingMinutes.value = item.readingMinutes || "";
+  renderProgressPreview();
   els.series.value = item.series;
   els.store.value = item.store;
   els.acquiredDate.value = item.acquiredDate;
@@ -1371,6 +1505,7 @@ els.importFile.addEventListener("change", (event) => importData(event.target.fil
 els.type.addEventListener("change", () => {
   setFormat(getDefaultFormat(els.type.value));
   setReadingStatus(els.readingStatus.value);
+  renderProgressPreview();
 });
 els.formatPicker.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-format]");
@@ -1382,6 +1517,9 @@ els.readingPicker.addEventListener("click", (event) => {
   if (!button) return;
   setReadingStatus(button.dataset.reading);
 });
+els.pagesRead.addEventListener("input", renderProgressPreview);
+els.totalPages.addEventListener("input", renderProgressPreview);
+els.readingMinutes.addEventListener("input", renderProgressPreview);
 els.externalPhotoBtn.addEventListener("click", searchExternalPhotos);
 els.openGoogleImagesBtn.addEventListener("click", openGoogleImages);
 els.externalPhotoSearch.addEventListener("keydown", (event) => {
@@ -1448,4 +1586,5 @@ loadAppTitle();
 applyGoogleConfig();
 initializeCloud();
 renderReadingPicker();
+renderProgressPreview();
 render();

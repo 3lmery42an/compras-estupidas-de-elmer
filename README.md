@@ -1,8 +1,8 @@
 # Collector Purchase Tracker
 
-Aplicacion web para organizar compras, wishlist y coleccion personal de comics, mangas, figuras y otros articulos coleccionables.
+Aplicacion web para organizar compras, wishlist y coleccion personal de comics, mangas, libros, figuras y otros articulos coleccionables.
 
-La app permite registrar articulos pendientes o conseguidos, anadir precio, tienda, formato, prioridad, estado de lectura, notas e imagenes. Tambien incluye busqueda, filtros, estadisticas y exportacion/importacion de datos en JSON.
+La app permite registrar articulos pendientes o conseguidos, anadir precio, tienda, formato, prioridad, estado de lectura, progreso, notas e imagenes. Tambien incluye busqueda, filtros, estadisticas y exportacion/importacion de datos en JSON.
 
 ## Demo
 
@@ -25,11 +25,12 @@ Pendiente agregar capturas de pantalla de:
 
 ## Funcionalidades
 
-- Agregar comics, mangas y figuras.
+- Agregar comics, mangas, libros y figuras.
 - Clasificar articulos como pendientes o conseguidos.
 - Guardar precio, tienda, serie/linea, fecha, notas e imagen.
 - Asignar prioridad: alta, media o baja.
 - Registrar estado de lectura: no leido, por leer o leido.
+- Guardar paginas leidas, total de paginas, tiempo leido y porcentaje de progreso.
 - Filtrar por estado y tipo de articulo.
 - Buscar por titulo, serie, tienda, notas o formato.
 - Ordenar por fecha, prioridad, precio o titulo.
@@ -67,10 +68,11 @@ Abre `index.html` en el navegador o usa una extension como Live Server.
 
 1. Completa el formulario con los datos del articulo.
 2. Selecciona tipo, estado, prioridad y formato.
-3. Anade una imagen por URL, archivo local o busqueda externa.
-4. Guarda el articulo.
-5. Usa los filtros y la busqueda para organizar el catalogo.
-6. Exporta tu catalogo como respaldo JSON.
+3. Si es comic, manga o libro, agrega paginas leidas, total de paginas y tiempo leido.
+4. Anade una imagen por URL, archivo local o busqueda externa.
+5. Guarda el articulo.
+6. Usa los filtros y la busqueda para organizar el catalogo.
+7. Exporta tu catalogo como respaldo JSON.
 
 ## Backup y transferencia de datos
 

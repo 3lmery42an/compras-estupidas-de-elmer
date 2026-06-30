@@ -117,11 +117,11 @@
           <div class="reading-board-header">
             <div>
               <h2 id="readingBoardTitle">Lista de lectura</h2>
-              <p id="readingBoardCount" class="result-count">0 comics y mangas</p>
+              <p id="readingBoardCount" class="result-count">0 items de lectura</p>
             </div>
           </div>
 
-          <div class="reading-columns" aria-label="Comics por estado de lectura">
+          <div class="reading-columns" aria-label="Items por estado de lectura">
             <section class="reading-column" aria-labelledby="readListTitle">
               <div class="reading-column-heading">
                 <span id="readListTitle">Leidos</span>
@@ -174,6 +174,7 @@
                   <select id="type" name="type">
                     <option value="comic">Comic</option>
                     <option value="manga">Manga</option>
+                    <option value="book">Libro</option>
                     <option value="figure">Figura</option>
                   </select>
                 </label>
@@ -228,6 +229,38 @@
                   <button class="active" type="button" data-reading="unread">No leido</button>
                   <button type="button" data-reading="queued">Por leer</button>
                   <button type="button" data-reading="read">Leido</button>
+                </div>
+              </div>
+
+              <div class="field-group reading-progress-editor" id="readingProgressGroup">
+                <span>Progreso de lectura</span>
+                <div class="form-row">
+                  <label>
+                    <span>Paginas leidas</span>
+                    <input id="pagesRead" name="pagesRead" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                  </label>
+                  <label>
+                    <span>Total paginas</span>
+                    <input id="totalPages" name="totalPages" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>
+                    <span>Tiempo leido</span>
+                    <span class="unit-input">
+                      <input id="readingMinutes" name="readingMinutes" type="number" min="0" step="1" inputmode="numeric" placeholder="0" />
+                      <span aria-hidden="true">min</span>
+                    </span>
+                  </label>
+                  <div class="progress-preview" aria-label="Progreso calculado">
+                    <div class="progress-preview-head">
+                      <span>Porcentaje</span>
+                      <strong id="progressPreviewText">0%</strong>
+                    </div>
+                    <div class="progress-track">
+                      <span id="progressPreviewBar"></span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -353,6 +386,7 @@
                 <button class="active" type="button" data-type="all">Todos</button>
                 <button type="button" data-type="comic">Comics</button>
                 <button type="button" data-type="manga">Mangas</button>
+                <button type="button" data-type="book">Libros</button>
                 <button type="button" data-type="figure">Figuras</button>
               </div>
 
@@ -395,6 +429,16 @@
           <h3></h3>
           <p class="meta-line"></p>
           <p class="price-line"></p>
+          <div class="reading-progress-card" hidden>
+            <div class="reading-progress-head">
+              <span class="progress-pages"></span>
+              <strong class="progress-percent"></strong>
+            </div>
+            <div class="progress-track">
+              <span class="progress-bar"></span>
+            </div>
+            <span class="progress-time"></span>
+          </div>
           <p class="note-line"></p>
           <div class="card-actions">
             <button class="secondary-btn toggle-status" type="button"></button>
