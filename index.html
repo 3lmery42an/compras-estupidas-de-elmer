@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compras Estupidas de Elmer.</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Catalogo personal</p>
+          <h1>Compras Estupidas de Elmer.</h1>
+        </div>
+        <div class="top-actions" aria-label="Acciones de archivo">
+          <button class="ghost-btn" id="exportBtn" type="button" title="Exportar JSON">
+            <span class="button-icon" aria-hidden="true">v</span>
+            Exportar
+          </button>
+          <label class="ghost-btn file-action" title="Importar JSON">
+            <span class="button-icon" aria-hidden="true">^</span>
+            Importar
+            <input id="importFile" type="file" accept="application/json,.json" />
+          </label>
+        </div>
+      </header>
+
+      <main>
+        <section class="stats-grid" aria-label="Resumen">
+          <div class="stat-panel">
+            <span class="stat-label">Pendientes</span>
+            <strong id="wishlistCount">0</strong>
+          </div>
+          <div class="stat-panel">
+            <span class="stat-label">Conseguidos</span>
+            <strong id="ownedCount">0</strong>
+          </div>
+          <div class="stat-panel">
+            <span class="stat-label">Valor pendiente</span>
+            <strong id="wishlistValue">$0</strong>
+          </div>
+          <div class="stat-panel">
+            <span class="stat-label">Valor catalogo</span>
+            <strong id="catalogValue">$0</strong>
+          </div>
+          <div class="stat-panel">
+            <span class="stat-label">Total</span>
+            <strong id="totalCount">0</strong>
+          </div>
+        </section>
+
+        <section class="workspace-grid">
+          <aside class="panel form-panel" aria-labelledby="formTitle">
+            <div class="panel-heading">
+              <h2 id="formTitle">Nuevo item</h2>
+              <button class="icon-btn" id="clearFormBtn" type="button" title="Limpiar formulario">
+                x
+              </button>
+            </div>
+
+            <form id="itemForm" class="item-form">
+              <input id="itemId" type="hidden" />
+              <input id="format" name="format" type="hidden" value="paperback" />
+
+              <label>
+                <span>Titulo</span>
+                <input id="title" name="title" type="text" placeholder="Ej. Berserk Deluxe 1" required />
+              </label>
+
+              <div class="form-row">
+                <label>
+                  <span>Tipo</span>
+                  <select id="type" name="type">
+                    <option value="comic">Comic</option>
+                    <option value="manga">Manga</option>
+                    <option value="figure">Figura</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="status" name="status">
+                    <option value="wishlist">Pendiente</option>
+                    <option value="owned">Conseguido</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-row">
+                <label>
+                  <span>Prioridad</span>
+                  <select id="priority" name="priority">
+                    <option value="">Sin prioridad</option>
+                    <option value="high">Alta</option>
+                    <option value="medium">Media</option>
+                    <option value="low">Baja</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Valor total del item</span>
+                  <span class="money-input">
+                    <span aria-hidden="true">$</span>
+                    <input id="price" name="price" type="number" min="0" step="0.01" placeholder="0.00" />
+                  </span>
+                </label>
+              </div>
+
+              <div class="field-group">
+                <span>Formato o edicion</span>
+                <div class="format-picker" id="formatPicker" aria-label="Formato o edicion">
+                  <button class="active" type="button" data-format="paperback">Paperback</button>
+                  <button type="button" data-format="hardcover">Hardcover</button>
+                  <button type="button" data-format="omnibus">Omnibus</button>
+                  <button type="button" data-format="deluxe">Deluxe</button>
+                  <button type="button" data-format="single">Grapa</button>
+                  <button type="button" data-format="variant">Variante</button>
+                  <button type="button" data-format="boxset">Box set</button>
+                  <button type="button" data-format="digital">Digital</button>
+                  <button type="button" data-format="tankobon">Tankobon</button>
+                  <button type="button" data-format="scale112">1/12</button>
+                  <button type="button" data-format="statue">Estatua</button>
+                </div>
+              </div>
+
+              <label>
+                <span>Serie o linea</span>
+                <input id="series" name="series" type="text" placeholder="Ej. Marvel Legends" />
+              </label>
+
+              <div class="form-row">
+                <label>
+                  <span>Tienda</span>
+                  <input id="store" name="store" type="text" placeholder="Ej. Amazon, eBay" />
+                </label>
+                <label>
+                  <span>Fecha conseguido</span>
+                  <input id="acquiredDate" name="acquiredDate" type="date" />
+                </label>
+              </div>
+
+              <label>
+                <span>Imagen por link o URL</span>
+                <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." />
+              </label>
+
+              <div class="external-photo-panel">
+                <label>
+                  <span>Fotos de Google</span>
+                  <input id="externalPhotoSearch" type="search" placeholder="Buscar en Google" />
+                </label>
+                <div class="form-row">
+                  <label>
+                    <span>Google API key</span>
+                    <input id="googleApiKey" type="password" autocomplete="off" placeholder="API key" />
+                  </label>
+                  <label>
+                    <span>Search engine ID</span>
+                    <input id="googleSearchEngineId" type="text" autocomplete="off" placeholder="CX" />
+                  </label>
+                </div>
+                <div class="external-photo-actions">
+                  <button class="secondary-btn" id="externalPhotoBtn" type="button">
+                    Buscar fotos
+                  </button>
+                  <button class="secondary-btn" id="openGoogleImagesBtn" type="button">
+                    Abrir Google
+                  </button>
+                </div>
+                <p class="external-photo-status" id="externalPhotoStatus" aria-live="polite"></p>
+                <div class="external-photo-results" id="externalPhotoResults"></div>
+              </div>
+
+              <label>
+                <span>Notas</span>
+                <textarea id="notes" name="notes" rows="4" placeholder="Edicion, escala, variante, vendedor..."></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">
+                  <span class="button-icon" aria-hidden="true">+</span>
+                  Guardar
+                </button>
+                <button class="secondary-btn" id="cancelEditBtn" type="button" hidden>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </aside>
+
+          <section class="panel catalog-panel" aria-labelledby="catalogTitle">
+            <div class="catalog-header">
+              <div>
+                <h2 id="catalogTitle">Catalogo</h2>
+                <p id="resultCount" class="result-count">0 items</p>
+              </div>
+              <label class="search-box">
+                <span class="button-icon" aria-hidden="true">?</span>
+                <input id="searchInput" type="search" placeholder="Buscar" />
+              </label>
+            </div>
+
+            <div class="controls-bar" aria-label="Filtros">
+              <div class="segmented" id="statusFilters">
+                <button class="active" type="button" data-status="all">Todo</button>
+                <button type="button" data-status="wishlist">Pendiente</button>
+                <button type="button" data-status="owned">Conseguido</button>
+              </div>
+
+              <div class="segmented" id="typeFilters">
+                <button class="active" type="button" data-type="all">Todos</button>
+                <button type="button" data-type="comic">Comics</button>
+                <button type="button" data-type="manga">Mangas</button>
+                <button type="button" data-type="figure">Figuras</button>
+              </div>
+
+              <label class="sort-select">
+                <span>Orden</span>
+                <select id="sortSelect">
+                  <option value="created-desc">Recientes</option>
+                  <option value="priority">Prioridad</option>
+                  <option value="price-desc">Valor mayor</option>
+                  <option value="price-asc">Valor menor</option>
+                  <option value="title">Titulo</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="catalogGrid" class="catalog-grid" aria-live="polite"></div>
+
+            <div id="emptyState" class="empty-state" hidden>
+              <strong>No hay items aqui</strong>
+              <span>Cambia los filtros o guarda uno nuevo.</span>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <template id="cardTemplate">
+      <article class="item-card">
+        <div class="cover-wrap">
+          <img alt="" class="cover" />
+          <span class="type-badge"></span>
+        </div>
+        <div class="card-body">
+          <div class="status-row">
+            <span class="status-pill"></span>
+            <span class="priority-pill"></span>
+            <span class="format-pill"></span>
+          </div>
+          <h3></h3>
+          <p class="meta-line"></p>
+          <p class="price-line"></p>
+          <p class="note-line"></p>
+          <div class="card-actions">
+            <button class="secondary-btn toggle-status" type="button"></button>
+            <button class="secondary-btn edit-item" type="button">Editar</button>
+            <button class="danger-btn delete-item" type="button">Eliminar</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
