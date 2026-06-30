@@ -167,6 +167,13 @@ const els = {
   wishlistValue: document.querySelector("#wishlistValue"),
   catalogValue: document.querySelector("#catalogValue"),
   totalCount: document.querySelector("#totalCount"),
+  readingBoardCount: document.querySelector("#readingBoardCount"),
+  readList: document.querySelector("#readList"),
+  unreadList: document.querySelector("#unreadList"),
+  queuedList: document.querySelector("#queuedList"),
+  readListCount: document.querySelector("#readListCount"),
+  unreadListCount: document.querySelector("#unreadListCount"),
+  queuedListCount: document.querySelector("#queuedListCount"),
   resultCount: document.querySelector("#resultCount"),
   searchInput: document.querySelector("#searchInput"),
   statusFilters: document.querySelector("#statusFilters"),
@@ -588,6 +595,55 @@ function renderStats() {
   els.totalCount.textContent = state.items.length;
 }
 
+function getReadableItems() {
+  return state.items
+    .filter((item) => isReadableType(item.type))
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+function createReadingListItem(item) {
+  const listItem = document.createElement("li");
+  const title = document.createElement("span");
+  const meta = document.createElement("span");
+
+  title.className = "reading-list-title";
+  title.textContent = item.title;
+  meta.className = "reading-list-meta";
+  meta.textContent = [typeLabels[item.type], formatLabels[item.format], item.series].filter(Boolean).join(" | ");
+
+  listItem.append(title, meta);
+  return listItem;
+}
+
+function renderReadingColumn(listElement, countElement, items, emptyText) {
+  listElement.replaceChildren();
+  countElement.textContent = items.length;
+
+  if (!items.length) {
+    const emptyItem = document.createElement("li");
+    emptyItem.className = "reading-list-empty";
+    emptyItem.textContent = emptyText;
+    listElement.append(emptyItem);
+    return;
+  }
+
+  items.forEach((item) => {
+    listElement.append(createReadingListItem(item));
+  });
+}
+
+function renderReadingLists() {
+  const readableItems = getReadableItems();
+  const readItems = readableItems.filter((item) => item.readingStatus === "read");
+  const unreadItems = readableItems.filter((item) => item.readingStatus === "unread");
+  const queuedItems = readableItems.filter((item) => item.readingStatus === "queued");
+
+  els.readingBoardCount.textContent = `${readableItems.length} ${readableItems.length === 1 ? "comic o manga" : "comics y mangas"}`;
+  renderReadingColumn(els.readList, els.readListCount, readItems, "Nada leido todavia.");
+  renderReadingColumn(els.unreadList, els.unreadListCount, unreadItems, "Nada sin leer.");
+  renderReadingColumn(els.queuedList, els.queuedListCount, queuedItems, "Nada por leer.");
+}
+
 function renderFilters() {
   els.statusFilters.querySelectorAll("button").forEach((button) => {
     button.classList.toggle("active", button.dataset.status === state.filters.status);
@@ -664,6 +720,7 @@ function renderCatalog() {
 
 function render() {
   renderStats();
+  renderReadingLists();
   renderFilters();
   renderCatalog();
 }

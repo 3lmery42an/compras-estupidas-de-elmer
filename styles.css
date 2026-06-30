@@ -241,6 +241,110 @@ h3 {
   line-height: 1;
 }
 
+.reading-board {
+  margin-bottom: 18px;
+}
+
+.reading-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reading-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reading-column {
+  min-width: 0;
+  padding: 12px;
+  background: #f7fafb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.reading-column-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.reading-column-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.reading-column-heading strong {
+  display: inline-grid;
+  min-width: 28px;
+  min-height: 28px;
+  place-items: center;
+  padding: 0 8px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.reading-list {
+  display: grid;
+  gap: 8px;
+  min-height: 42px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reading-list li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.reading-list-title {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-list-meta {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.reading-list-empty {
+  display: grid;
+  min-height: 42px;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
@@ -819,6 +923,10 @@ textarea:focus {
 @media (max-width: 980px) {
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reading-columns {
+    grid-template-columns: 1fr;
   }
 
   .workspace-grid {

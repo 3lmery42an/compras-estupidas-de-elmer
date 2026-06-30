@@ -64,6 +64,41 @@
           </div>
         </section>
 
+        <section class="panel reading-board" aria-labelledby="readingBoardTitle">
+          <div class="reading-board-header">
+            <div>
+              <h2 id="readingBoardTitle">Lista de lectura</h2>
+              <p id="readingBoardCount" class="result-count">0 comics y mangas</p>
+            </div>
+          </div>
+
+          <div class="reading-columns" aria-label="Comics por estado de lectura">
+            <section class="reading-column" aria-labelledby="readListTitle">
+              <div class="reading-column-heading">
+                <span id="readListTitle">Leidos</span>
+                <strong id="readListCount">0</strong>
+              </div>
+              <ul class="reading-list" id="readList"></ul>
+            </section>
+
+            <section class="reading-column" aria-labelledby="unreadListTitle">
+              <div class="reading-column-heading">
+                <span id="unreadListTitle">No leidos</span>
+                <strong id="unreadListCount">0</strong>
+              </div>
+              <ul class="reading-list" id="unreadList"></ul>
+            </section>
+
+            <section class="reading-column" aria-labelledby="queuedListTitle">
+              <div class="reading-column-heading">
+                <span id="queuedListTitle">Por leer</span>
+                <strong id="queuedListCount">0</strong>
+              </div>
+              <ul class="reading-list" id="queuedList"></ul>
+            </section>
+          </div>
+        </section>
+
         <section class="workspace-grid">
           <aside class="panel form-panel" aria-labelledby="formTitle">
             <div class="panel-heading">
