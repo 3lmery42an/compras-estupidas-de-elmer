@@ -127,6 +127,7 @@ const state = {
     client: null,
     configSignature: "",
     authListener: null,
+    session: null,
     user: null,
     loading: false,
   },
@@ -317,7 +318,7 @@ function setCloudStatus(message, mode = "idle") {
 
 function renderCloudControls() {
   const hasConfig = Boolean(els.supabaseUrl.value.trim() && els.supabaseKey.value.trim());
-  const isOnline = Boolean(state.cloud.user);
+  const isOnline = Boolean(state.cloud.session);
   const disabled = state.cloud.loading;
 
   els.cloudLoginBtn.disabled = disabled || !hasConfig;
@@ -1048,7 +1049,7 @@ function importData(file) {
       }
       if (saveItems()) {
         render();
-        if (state.cloud.user) {
+        if (state.cloud.session) {
           runCloudAction(pushLocalToCloud);
         }
       }
@@ -1089,11 +1090,13 @@ async function getCloudClient() {
   const { data } = await client.auth.getSession();
   state.cloud.client = client;
   state.cloud.configSignature = signature;
+  state.cloud.session = data.session || null;
   state.cloud.user = data.session?.user || null;
   state.cloud.authListener = client.auth.onAuthStateChange((_event, session) => {
+    state.cloud.session = session || null;
     state.cloud.user = session?.user || null;
     renderCloudControls();
-    setCloudStatus(state.cloud.user ? `Conectado: ${state.cloud.user.email}` : "Local solamente", state.cloud.user ? "online" : "idle");
+    setCloudStatus(state.cloud.session ? `Conectado: ${state.cloud.user.email}` : "Local solamente", state.cloud.session ? "online" : "idle");
   }).data.subscription;
 
   return client;
@@ -1101,7 +1104,7 @@ async function getCloudClient() {
 
 function toCloudRow(item) {
   return {
-    user_id: state.cloud.user.id,
+    user_id: state.cloud.session.user.id,
     item_id: item.id,
     data: item,
     updated_at: new Date().toISOString(),
@@ -1123,7 +1126,7 @@ async function fetchCloudItems() {
 }
 
 async function upsertCloudItem(item) {
-  if (!item || !state.cloud.user || !state.cloud.client) return;
+  if (!item || !state.cloud.session || !state.cloud.client) return;
 
   try {
     const { error } = await state.cloud.client
@@ -1138,13 +1141,13 @@ async function upsertCloudItem(item) {
 }
 
 async function deleteCloudItem(id) {
-  if (!state.cloud.user || !state.cloud.client) return;
+  if (!state.cloud.session || !state.cloud.client) return;
 
   try {
     const { error } = await state.cloud.client
       .from(CLOUD_TABLE)
       .delete()
-      .eq("user_id", state.cloud.user.id)
+      .eq("user_id", state.cloud.session.user.id)
       .eq("item_id", id);
 
     if (error) throw error;
@@ -1157,8 +1160,8 @@ async function deleteCloudItem(id) {
 async function pushLocalToCloud() {
   const client = await getCloudClient();
 
-  if (!state.cloud.user) {
-    throw new Error("Inicia sesion primero.");
+  if (!state.cloud.session) {
+    throw new Error("Inicia sesion primero. Si acabas de crear la cuenta, confirma tu email y vuelve a iniciar sesion.");
   }
 
   const rows = state.items.map(toCloudRow);
@@ -1172,7 +1175,7 @@ async function pushLocalToCloud() {
     const { error: deleteError } = await client
       .from(CLOUD_TABLE)
       .delete()
-      .eq("user_id", state.cloud.user.id)
+      .eq("user_id", state.cloud.session.user.id)
       .in("item_id", staleRemoteIds);
 
     if (deleteError) throw deleteError;
@@ -1248,17 +1251,31 @@ async function handleCloudSignup() {
     const client = await getCloudClient();
     const email = els.cloudEmail.value.trim();
     const password = els.cloudPassword.value;
-    const { data, error } = await client.auth.signUp({ email, password });
+
+    if (!email || !password) {
+      throw new Error("Escribe email y password para crear la cuenta.");
+    }
+
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: location.href,
+      },
+    });
 
     if (error) throw error;
 
-    state.cloud.user = data.user || null;
     if (data.session) {
+      state.cloud.session = data.session;
+      state.cloud.user = data.session.user;
       await reconcileCloudAfterLogin();
       return;
     }
 
-    setCloudStatus("Cuenta creada. Revisa tu email si Supabase pide confirmacion.", "online");
+    state.cloud.session = null;
+    state.cloud.user = null;
+    setCloudStatus("Cuenta creada, pero falta confirmar el email. Confirma el correo y luego usa Iniciar sesion.", "idle");
   });
 }
 
@@ -1267,11 +1284,20 @@ async function handleCloudLogin() {
     const client = await getCloudClient();
     const email = els.cloudEmail.value.trim();
     const password = els.cloudPassword.value;
+
+    if (!email || !password) {
+      throw new Error("Escribe email y password para iniciar sesion.");
+    }
+
     const { data, error } = await client.auth.signInWithPassword({ email, password });
 
     if (error) throw error;
+    if (!data.session) {
+      throw new Error("Supabase no devolvio una sesion. Confirma tu email y vuelve a iniciar sesion.");
+    }
 
-    state.cloud.user = data.user;
+    state.cloud.session = data.session;
+    state.cloud.user = data.session.user;
     await reconcileCloudAfterLogin();
   });
 }
@@ -1281,6 +1307,7 @@ async function handleCloudLogout() {
     const client = await getCloudClient();
     const { error } = await client.auth.signOut();
     if (error) throw error;
+    state.cloud.session = null;
     state.cloud.user = null;
     setCloudStatus("Local solamente", "idle");
   });
@@ -1293,6 +1320,7 @@ function saveCloudConfigFromForm() {
     state.cloud.authListener = null;
   }
   state.cloud.client = null;
+  state.cloud.session = null;
   state.cloud.user = null;
   state.cloud.configSignature = "";
   setCloudStatus("Conexion guardada.", "idle");
@@ -1311,7 +1339,7 @@ async function initializeCloud() {
 
   await runCloudAction(async () => {
     await getCloudClient();
-    if (state.cloud.user) {
+    if (state.cloud.session) {
       setCloudStatus(`Conectado: ${state.cloud.user.email}`, "online");
     } else {
       setCloudStatus("Conexion lista. Inicia sesion.", "idle");

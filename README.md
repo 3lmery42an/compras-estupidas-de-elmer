@@ -98,6 +98,8 @@ Para ver el mismo catalogo en varios dispositivos:
 6. Usa `Subir local` en el dispositivo donde ya tienes tu catalogo.
 7. En otros dispositivos, inicia sesion y usa `Cargar nube`.
 
+Si `Crear cuenta` no inicia sesion automaticamente, revisa tu email y confirma la cuenta. Supabase puede requerir confirmacion antes de entregar una sesion activa. Tambien puedes desactivar la confirmacion de email desde Authentication > Providers > Email en tu proyecto de Supabase si prefieres login inmediato durante desarrollo.
+
 La anon key de Supabase puede usarse en frontend, pero debes mantener activado Row Level Security como aparece en `supabase-schema.sql`.
 
 ## Privacidad
