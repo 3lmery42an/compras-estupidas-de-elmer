@@ -585,6 +585,20 @@ function sanitizeImageSource(url) {
   }
 }
 
+function setImageBackfill(element, imageSource) {
+  if (!element) return;
+
+  const source = sanitizeImageSource(imageSource);
+  element.classList.toggle("has-image", Boolean(source));
+
+  if (!source) {
+    element.style.removeProperty("background-image");
+    return;
+  }
+
+  element.style.backgroundImage = `url("${source.replace(/["\\]/g, "\\$&")}")`;
+}
+
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -627,6 +641,7 @@ async function compressImageFile(file) {
 function updateImagePreview(imageSource, message = "") {
   const source = sanitizeImageSource(imageSource);
   els.localPhotoPreview.hidden = !source;
+  setImageBackfill(els.localPhotoPreview, source);
   els.imagePreview.src = source || "";
   els.localPhotoStatus.textContent = message;
   els.imageSourceBadge.textContent = source
@@ -719,6 +734,7 @@ function renderExternalPhotos(photos) {
     button.title = `Elegir ${photo.title}`;
     button.dataset.photoUrl = photo.url;
     button.classList.toggle("selected", els.imageUrl.value === photo.url);
+    setImageBackfill(button, photo.thumbUrl);
 
     image.src = photo.thumbUrl;
     image.alt = photo.title;
@@ -1004,13 +1020,16 @@ function renderCatalog() {
     const deleteButton = card.querySelector(".delete-item");
 
     const coverImage = sanitizeImageSource(item.image);
+    const coverWrap = cover.closest(".cover-wrap");
     cover.hidden = !coverImage;
-    cover.closest(".cover-wrap").classList.toggle("no-image", !coverImage);
+    coverWrap.classList.toggle("no-image", !coverImage);
+    setImageBackfill(coverWrap, coverImage);
     cover.src = coverImage;
     cover.alt = item.title;
     cover.addEventListener("error", () => {
       cover.hidden = true;
-      cover.closest(".cover-wrap").classList.add("no-image");
+      coverWrap.classList.add("no-image");
+      setImageBackfill(coverWrap, "");
     }, { once: true });
 
     typeBadge.textContent = typeLabels[item.type];

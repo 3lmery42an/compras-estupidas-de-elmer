@@ -838,20 +838,48 @@ textarea:focus {
   min-height: 96px;
   padding: 0;
   background: var(--surface);
+  background-position: center;
+  background-size: cover;
   border: 2px solid transparent;
   border-radius: 8px;
 }
 
+.external-photo-option.has-image::before,
+.local-photo-preview.has-image::before,
+.cover-wrap.has-image::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  background-image: inherit;
+  background-position: center;
+  background-size: cover;
+  filter: blur(14px);
+  opacity: 0.64;
+  transform: scale(1.04);
+}
+
+.external-photo-option.has-image::after,
+.local-photo-preview.has-image::after,
+.cover-wrap.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(21, 25, 35, 0.12);
+}
+
 .external-photo-option img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   aspect-ratio: 1;
-  background: var(--surface-raised);
+  background: transparent;
   object-fit: contain;
 }
 
 .external-photo-option span {
   position: absolute;
+  z-index: 2;
   inset-inline: 0;
   bottom: 0;
   padding: 5px 6px;
@@ -875,18 +903,23 @@ textarea:focus {
 }
 
 .local-photo-preview {
+  position: relative;
   overflow: hidden;
   width: 100%;
   aspect-ratio: 4 / 3;
   background: var(--surface);
+  background-position: center;
+  background-size: cover;
   border: 1px solid var(--line);
   border-radius: 8px;
 }
 
 .local-photo-preview img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  background: var(--surface-raised);
+  background: transparent;
   object-fit: contain;
 }
 
@@ -1080,6 +1113,8 @@ textarea:focus {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: var(--surface-soft);
+  background-position: center;
+  background-size: cover;
 }
 
 .cover-wrap.no-image {
@@ -1091,16 +1126,22 @@ textarea:focus {
 
 .cover-wrap.no-image::before {
   content: "Foto pendiente";
+  position: static;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 900;
   text-transform: uppercase;
+  filter: none;
+  opacity: 1;
+  transform: none;
 }
 
 .cover {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  background: var(--surface-raised);
+  background: transparent;
   object-fit: contain;
 }
 
@@ -1121,6 +1162,7 @@ textarea:focus {
 
 .type-badge {
   position: absolute;
+  z-index: 2;
   left: 10px;
   bottom: 10px;
   background: rgba(21, 25, 35, 0.84);
