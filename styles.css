@@ -846,7 +846,8 @@ textarea:focus {
   width: 100%;
   height: 100%;
   aspect-ratio: 1;
-  object-fit: cover;
+  background: var(--surface-raised);
+  object-fit: contain;
 }
 
 .external-photo-option span {
@@ -885,7 +886,8 @@ textarea:focus {
 .local-photo-preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  background: var(--surface-raised);
+  object-fit: contain;
 }
 
 .local-photo-actions {
@@ -1098,7 +1100,8 @@ textarea:focus {
 .cover {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  background: var(--surface-raised);
+  object-fit: contain;
 }
 
 .type-badge,
